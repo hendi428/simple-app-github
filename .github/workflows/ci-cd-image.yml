@@ -1,8 +1,7 @@
 name: Build, Push and Deploy Docker Image
-run-name: Build, Push and Deploy Image
 on: [push]
 env:
-  IMAGE_NAME: "ghcr.io/hendi428/nginx-hendi:latest"
+  IMAGE_NAME: "ghcr.io/hendi428/nginx-hendi"
 jobs:
   build-push-image:
     runs-on: ubuntu-latest
@@ -16,27 +15,22 @@ jobs:
         run: docker build -t $IMAGE_NAME .
       - name: List Image
         run: docker images
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Login to GitHub Registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: Push Image
         run: docker push $IMAGE_NAME
 
   deploy:
     needs: build-push-image
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Check out repository code
         uses: actions/checkout@v4
       - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
       - name: stop and remove existing container
         run: docker compose down --rmi all
       - name: start container
@@ -44,4 +38,7 @@ jobs:
       - name: view container
         run: docker compose ps
       - name: check container
-        run: curl localhost:8080
+        run: |
+          docker ps
+          sleep 5
+        curl localhost:8080
