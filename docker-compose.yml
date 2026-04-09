@@ -1,0 +1,5 @@
+services:
+  webserver:
+    image: ghcr.io/hendi428/nginx-hendi
+    ports:
+      - "8080:80"
